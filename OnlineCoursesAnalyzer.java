@@ -37,34 +37,34 @@ public class OnlineCoursesAnalyzer {
         }
     }
 
-    public static boolean isContain(String s1, String s2){
-        for (String str:s1.replaceAll("\"","").split(", ")){
-            if (str.contains(s2)&&str.length()==s2.length()) return true;
+    public static boolean isContain(String s1, String s2) {
+        for (String str : s1.replaceAll("\"", "").split(", ")) {
+            if (str.contains(s2)&&str.length() == s2.length()) return true;
         }
         return false;
     }
     //1
     public Map<String, Integer> getPtcpCountByInst() {
-        return courses.stream().collect(Collectors.groupingBy(c-> c.institution, Collectors.summingInt(
-                c-> c.participants)));
+        return courses.stream().collect(Collectors.groupingBy(c -> c.institution, Collectors.summingInt(
+                c -> c.participants)));
     }
 
     //2
     public Map<String, Integer> getPtcpCountByInstAndSubject() {
-        Map<String, Integer> map=courses.stream().collect(Collectors.groupingBy(c-> c.institution
+        Map<String, Integer> map = courses.stream().collect(Collectors.groupingBy(c-> c.institution
                 + "-"+c.subject, Collectors.summingInt(c-> c.participants)));
         //descending order of count
-        Map<String, Integer> result=new LinkedHashMap<>();
+        Map<String, Integer> result = new LinkedHashMap<>();
         map.entrySet().stream()
                 .sorted(Map.Entry.<String, Integer>comparingByValue().reversed())
-                .forEachOrdered(e-> result.put(e.getKey().replaceAll("\"", ""),
+                .forEachOrdered(e -> result.put(e.getKey().replaceAll("\"", ""),
                         e.getValue()));
         return result;
     }
 
     //3
     public Map<String, List<List<String>>> getCourseListOfInstructor() {
-        List<String> nameList=new ArrayList<>();
+        List<String> nameList = new ArrayList<>();
         for (Course c:courses){
             if (c.instructors.contains(",")){
                 for (String v:c.instructors.replaceAll("\"", "").split(", ")){
@@ -73,20 +73,20 @@ public class OnlineCoursesAnalyzer {
             }
             else if (!nameList.contains(c.instructors)) nameList.add(c.instructors);
         }   //get nameList
-        Map<String, List<List<String>>> result=new HashMap<>();
+        Map<String, List<List<String>>> result = new HashMap<>();
         for (String n:nameList){
             //Get list0
-            List<String> list0= new ArrayList<>();
-            courses.stream().filter(c-> c.instructors.equals(n))
-                    .forEach(c-> list0.add(c.title.replaceAll("\"", "")));
+            List<String> list0 = new ArrayList<>();
+            courses.stream().filter(c -> c.instructors.equals(n))
+                    .forEach(c -> list0.add(c.title.replaceAll("\"", "")));
             //Get list1
-            List<String> list1=new ArrayList<>();
+            List<String> list1 = new ArrayList<>();
             for (Course c:courses){
                 if (c.instructors.contains(",")&&isContain(c.instructors, n)) {
                     list1.add(c.title.replaceAll("\"", ""));
                 }
             }
-            List<List<String>> courseList=Arrays.asList(list0.stream().distinct().sorted().toList()
+            List<List<String>> courseList = Arrays.asList(list0.stream().distinct().sorted().toList()
                     , list1.stream().distinct().sorted().toList());
             //get result
             result.put(n, courseList);
@@ -96,7 +96,7 @@ public class OnlineCoursesAnalyzer {
 
     //4
     public List<String> getCourses(int topK, String by) {
-        List<String> result=new ArrayList<>();
+        List<String> result = new ArrayList<>();
         //By hours
         if (Objects.equals(by, "hours")){
             courses.sort(Comparator.comparingDouble(c-> c.totalHours));
@@ -105,20 +105,20 @@ public class OnlineCoursesAnalyzer {
                 if (!result.contains(c.title.replaceAll("\"", ""))){
                     result.add(c.title.replaceAll("\"", ""));
                 }
-                if (result.size()==topK) break;
+                if (result.size() == topK) break;
             }
             //add identical course to result
             return result;
         }
         //By participants
         else if (Objects.equals(by, "participants")){
-            courses.sort(Comparator.comparingInt(c-> c.participants));
+            courses.sort(Comparator.comparingInt(c -> c.participants));
             Collections.reverse(courses);
             for (Course c:courses){
                 if (!result.contains(c.title)){
                     result.add(c.title);
                 }
-                if (result.size()==topK) break;
+                if (result.size() == topK) break;
             }
             return result;
         }
@@ -127,12 +127,12 @@ public class OnlineCoursesAnalyzer {
 
     //5
     public List<String> searchCourses(String courseSubject, double percentAudited, double totalCourseHours) {
-        List<String> result=new ArrayList<>();
+        List<String> result = new ArrayList<>();
         //filter list by the given criteria
-        List<Course> copy= courses.stream()
-                .filter(c-> c.subject.toLowerCase().contains(courseSubject.toLowerCase()))
-                .filter(c-> c.percentAudited>=percentAudited)
-                .filter(c-> c.totalHours<=totalCourseHours)
+        List<Course> copy = courses.stream()
+                .filter(c -> c.subject.toLowerCase().contains(courseSubject.toLowerCase()))
+                .filter(c -> c.percentAudited >= percentAudited)
+                .filter(c -> c.totalHours <= totalCourseHours)
                 .toList();
         //add identical course to result
         for (Course c:copy) {
@@ -148,23 +148,23 @@ public class OnlineCoursesAnalyzer {
     public List<String> recommendCourses(int age, int gender, int isBachelorOrHigher) {
         List<String> result=new ArrayList<>();
         //Map of courseNumber to age similar
-        Map<String, Double> map1=courses.stream()
-                .collect(Collectors.groupingBy(c-> c.number, Collectors
-                        .collectingAndThen(Collectors.averagingDouble(c-> (c.medianAge)),
-                                v-> (age-v)*(age-v))));
+        Map<String, Double> map1 = courses.stream()
+                .collect(Collectors.groupingBy(c -> c.number, Collectors
+                        .collectingAndThen(Collectors.averagingDouble(c -> (c.medianAge)),
+                                v -> (age - v)*(age - v))));
         //Map of courseNumber to gender similar
-        Map<String, Double> map2=courses.stream()
-                .collect(Collectors.groupingBy(c-> c.number, Collectors
-                        .collectingAndThen(Collectors.averagingDouble(c-> c.percentMale),
-                                v-> (gender*100-v)*(gender*100-v))));
+        Map<String, Double> map2 = courses.stream()
+                .collect(Collectors.groupingBy(c -> c.number, Collectors
+                        .collectingAndThen(Collectors.averagingDouble(c -> c.percentMale),
+                                v -> (gender*100 - v)*(gender*100 - v))));
         //Map of courseNumber to bachelor similar
-        Map<String, Double> map3=courses.stream()
-                .collect(Collectors.groupingBy(c->c.number, Collectors
-                        .collectingAndThen(Collectors.averagingDouble(c-> c.percentDegree),
-                                v->(isBachelorOrHigher*100-v)*(isBachelorOrHigher*100-v))));
+        Map<String, Double> map3 = courses.stream()
+                .collect(Collectors.groupingBy(c -> c.number, Collectors
+                        .collectingAndThen(Collectors.averagingDouble(c -> c.percentDegree),
+                                v -> (isBachelorOrHigher*100 - v)*(isBachelorOrHigher*100 - v))));
         //Map of courseNumber to similar value
-        map1.forEach((k,v)-> map2.merge(k,v,Double::sum));
-        map2.forEach((k,v)-> map3.merge(k,v,Double::sum));
+        map1.forEach((k, v) -> map2.merge(k, v, Double::sum));
+        map2.forEach((k, v) -> map3.merge(k, v, Double::sum));
         //Get a map of course number to the latest course
         courses.sort(new Comparator<Course>() {
             @Override
@@ -172,27 +172,27 @@ public class OnlineCoursesAnalyzer {
                 return o2.launchDate.compareTo(o1.launchDate);
             }
         });
-        Map<String,String> course=new HashMap<>();
-        for (Course c: courses){
-            if (!course.containsKey(c.number)){
-                course.put(c.number,c.title.replaceAll("\"",""));
+        Map<String, String> course = new HashMap<>();
+        for (Course c : courses) {
+            if (!course.containsKey(c.number)) {
+                course.put(c.number, c.title.replaceAll("\"", ""));
             }
         }
         //Get result
-        Map<String,Double> map4=new HashMap<>();
-        for (String k:course.keySet()) map4.put(course.get(k),map3.get(k));
-        Map<String,Double> valMap=new LinkedHashMap<>();
+        Map<String, Double> map4 = new HashMap<>();
+        for (String k : course.keySet()) map4.put(course.get(k), map3.get(k));
+        Map<String, Double> valMap=new LinkedHashMap<>();
         map4.entrySet().stream()
-                .sorted(Map.Entry.<String,Double>comparingByValue()
+                .sorted(Map.Entry.<String, Double>comparingByValue()
                         .thenComparing(Map.Entry::getKey)
                 )
-                .forEachOrdered(e->valMap.put(e.getKey(),e.getValue()));
+                .forEachOrdered(e -> valMap.put(e.getKey(),e.getValue()));
 
-        for (String k:valMap.keySet()){
-            if (!result.contains(k)){
+        for (String k : valMap.keySet()) {
+            if (!result.contains(k)) {
                 result.add(k);
             }
-            if (result.size()==10) break;
+            if (result.size() == 10) break;
         }
         return result;
     }
